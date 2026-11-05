@@ -80,6 +80,8 @@ export default function WeatherHeader({
             id="city-search"
             onChange={(event) => {
               setQuery(event.target.value);
+              setShowResults(false);
+              onSearch('');
             }}
             onFocus={() => query && searchStatus !== 'idle' && setShowResults(true)}
             placeholder="Buscar cidade..."

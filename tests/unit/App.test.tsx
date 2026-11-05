@@ -166,6 +166,9 @@ describe('Weather App interface', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não foi possível carregar a previsão',
     );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Local selecionado: Curitiba, Paraná, Brasil',
+    );
     await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
     expect(await screen.findByRole('region', { name: /Curitiba/ })).toHaveTextContent('22°C');
   });
@@ -188,6 +191,27 @@ describe('Weather App interface', () => {
     expect(await screen.findByRole('heading', { name: /Curitiba/ })).toBeInTheDocument();
   });
 
+  it('clears previous city options as soon as the search query is edited', async () => {
+    const user = userEvent.setup();
+    mockOpenMeteo();
+    render(<App />);
+
+    const searchbox = screen.getByRole('searchbox', { name: 'Buscar cidade' });
+    await user.type(searchbox, 'Curitiba');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    expect(await screen.findByRole('button', { name: /Curitiba.*Brasil/ })).toBeInTheDocument();
+
+    await user.clear(searchbox);
+    await user.type(searchbox, 'Lisboa');
+
+    expect(
+      screen.queryByRole('list', { name: 'Resultados da busca de cidades' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Curitiba.*Brasil/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    expect(await screen.findByRole('button', { name: /Lisboa.*Brasil/ })).toBeInTheDocument();
+  });
+
   it('reports a geocoding failure and keeps the search available for retry', async () => {
     const user = userEvent.setup();
     mockOpenMeteo(200, [503, 200]);
@@ -206,7 +230,7 @@ describe('Weather App interface', () => {
   it('renders em dashes for missing current and daily measurements', async () => {
     const user = userEvent.setup();
     mockWeatherPayload({
-      current: { time: '2026-11-05T09:41', weather_code: 1 },
+      current: { time: '2026-11-05T09:41', temperature_2m: 18.5, weather_code: 1 },
       daily: {
         time: ['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09'],
         weather_code: [1, 0, 80, 61, 3],
@@ -216,7 +240,7 @@ describe('Weather App interface', () => {
 
     await searchAndSelectCity(user, 'Curitiba');
     const currentWeather = screen.getByRole('region', { name: /Curitiba/ });
-    expect(await within(currentWeather).findAllByText('—')).toHaveLength(5);
+    expect(await within(currentWeather).findAllByText('—')).toHaveLength(4);
 
     const firstForecastDay = within(
       screen.getByRole('region', { name: 'Próximos dias' }),
@@ -246,6 +270,31 @@ describe('Weather App interface', () => {
       'A previsão de cinco dias está indisponível',
     );
     expect(screen.getByRole('region', { name: /Curitiba/ })).toHaveTextContent('22°C');
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
+  });
+
+  it('reports unavailable current weather while preserving a valid daily forecast', async () => {
+    const user = userEvent.setup();
+    mockWeatherPayload({
+      current: null,
+      daily: {
+        time: ['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09'],
+        weather_code: [1, 0, 80, 61, 3],
+        temperature_2m_max: [24, 25, 22, 20, 21],
+        temperature_2m_min: [16, 16, 15, 14, 14],
+        precipitation_probability_max: [20, 10, 60, 55, 0],
+      },
+    });
+    render(<App />);
+
+    await searchAndSelectCity(user, 'Curitiba');
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Clima atual indisponível para Curitiba, Paraná, Brasil',
+    );
+    expect(
+      within(screen.getByRole('region', { name: 'Próximos dias' })).getAllByRole('article'),
+    ).toHaveLength(5);
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
   });
 

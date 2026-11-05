@@ -18,6 +18,9 @@ export default function App() {
     weatherError,
     retryWeather,
   } = useWeather();
+  const selectedLocation = [selectedCity?.name, selectedCity?.region, selectedCity?.country]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <div className="min-h-screen overflow-hidden bg-[linear-gradient(155deg,#0b1020_0%,#11182a_48%,#0b1020_100%)] text-white">
@@ -43,7 +46,26 @@ export default function App() {
         <div className="mt-7 sm:mt-9">
           {weatherStatus === 'success' && weather ? (
             <>
-              <CurrentWeather city={weather} unit={unit} />
+              {weather.currentAvailable ? (
+                <CurrentWeather city={weather} unit={unit} />
+              ) : (
+                <section
+                  aria-live="polite"
+                  className="rounded-3xl border border-amber-200/15 bg-white/[0.055] p-6 text-center shadow-glass backdrop-blur-xl"
+                  role="status"
+                >
+                  <p className="text-sm text-slate-200">
+                    Clima atual indisponível para {selectedLocation || weather.name}.
+                  </p>
+                  <button
+                    className="mt-4 rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-400"
+                    onClick={retryWeather}
+                    type="button"
+                  >
+                    Tentar novamente
+                  </button>
+                </section>
+              )}
               {weather.forecast.length === 5 ? (
                 <ForecastGrid days={weather.forecast} unit={unit} />
               ) : (
@@ -81,6 +103,9 @@ export default function App() {
               role="alert"
             >
               <p className="text-sm text-rose-200">{weatherError}</p>
+              {selectedLocation && (
+                <p className="mt-2 text-sm text-slate-200">Local selecionado: {selectedLocation}</p>
+              )}
               <button
                 className="mt-4 rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-400"
                 onClick={retryWeather}

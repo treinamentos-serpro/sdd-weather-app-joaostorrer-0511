@@ -89,6 +89,7 @@ describe('weatherService', () => {
     const weather = await getWeather(city);
 
     expect(weather.temperatureCelsius).toBe(22);
+    expect(weather.currentAvailable).toBe(true);
     expect(weather.humidity).toBe(67);
     expect(weather.precipitationMm).toBe(0.2);
     expect(weather.forecast).toHaveLength(5);
@@ -157,6 +158,7 @@ describe('weatherService', () => {
     const weather = await getWeather(city);
 
     expect(weather.temperatureCelsius).toBe(18.5);
+    expect(weather.currentAvailable).toBe(false);
     expect(weather.humidity).toBeUndefined();
     expect(weather.windKph).toBeUndefined();
     expect(weather.region).toBeUndefined();
@@ -255,7 +257,7 @@ describe('weatherService', () => {
       'fetch',
       vi.fn().mockResolvedValue(
         jsonResponse({
-          current: { temperature_2m: 18 },
+          current: { time: '2026-02-31T99:99', temperature_2m: 18 },
           daily: { time: ['2026-02-31', 'bad', '2026-03-02', '2026-03-03', '2026-03-04'] },
         }),
       ),
@@ -272,6 +274,59 @@ describe('weatherService', () => {
     expect(weather.temperatureCelsius).toBe(18);
     expect(weather.localDate).toBe('—');
     expect(weather.updatedAt).toBe('—');
+    expect(weather.forecast).toEqual([]);
+  });
+
+  it('preserves a valid forecast when the current weather object is null', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          current: null,
+          daily: {
+            time: ['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09'],
+            weather_code: [1, 0, 80, 61, 3],
+            temperature_2m_max: [24, 25, 22, 20, 21],
+            temperature_2m_min: [16, 16, 15, 14, 14],
+            precipitation_probability_max: [20, 10, 60, 55, 0],
+          },
+        }),
+      ),
+    );
+
+    const weather = await getWeather({
+      id: '1',
+      name: 'Lisboa',
+      latitude: 38.72,
+      longitude: -9.14,
+    });
+
+    expect(weather.currentAvailable).toBe(false);
+    expect(weather.temperatureCelsius).toBeUndefined();
+    expect(weather.forecast).toHaveLength(5);
+  });
+
+  it('rejects duplicate, out-of-order, or gapped dates as a five-day forecast', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          current: { time: '2026-11-05T09:41', temperature_2m: 22, weather_code: 0 },
+          daily: {
+            time: ['2026-11-05', '2026-11-06', '2026-11-06', '2026-11-08', '2026-11-09'],
+          },
+        }),
+      ),
+    );
+
+    const weather = await getWeather({
+      id: '1',
+      name: 'Lisboa',
+      latitude: 38.72,
+      longitude: -9.14,
+    });
+
+    expect(weather.currentAvailable).toBe(true);
     expect(weather.forecast).toEqual([]);
   });
 });

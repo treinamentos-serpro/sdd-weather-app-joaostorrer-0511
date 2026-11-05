@@ -114,6 +114,26 @@ function isValidLocalDate(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+function isValidLocalDateTime(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  return (
+    match !== null && isValidLocalDate(match[1]) && Number(match[2]) < 24 && Number(match[3]) < 60
+  );
+}
+
+function hasFiveConsecutiveDates(value: unknown): value is string[] {
+  if (!Array.isArray(value) || value.length < 5) return false;
+  const dates = value.slice(0, 5);
+  if (!dates.every(isValidLocalDate)) return false;
+
+  return dates.slice(1).every((date, index) => {
+    const previousDay = Date.parse(`${dates[index]}T00:00:00Z`);
+    const currentDay = Date.parse(`${date}T00:00:00Z`);
+    return currentDay - previousDay === 24 * 60 * 60 * 1000;
+  });
+}
+
 export async function getWeather(
   city: CitySearchResult,
   signal?: AbortSignal,
@@ -134,21 +154,19 @@ export async function getWeather(
 
   const current = isRecord(payload.current) ? payload.current : {};
   const daily = isRecord(payload.daily) ? payload.daily : {};
+  const currentTemperature = readOptionalNumber(current, 'temperature_2m');
   const currentCode = readOptionalNumber(current, 'weather_code');
+  const currentAvailable = currentTemperature !== undefined && currentCode !== undefined;
   const currentCondition =
     currentCode === undefined ? { condition: '—', icon: '🌡️' } : describeWeatherCode(currentCode);
-  const currentTime =
-    typeof current.time === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(current.time)
-      ? current.time
-      : undefined;
+  const currentTime = isValidLocalDateTime(current.time) ? current.time : undefined;
 
   const dates = daily.time;
   const codes = daily.weather_code;
   const highs = daily.temperature_2m_max;
   const lows = daily.temperature_2m_min;
   const precipitation = daily.precipitation_probability_max;
-  const hasFiveDates =
-    Array.isArray(dates) && dates.length >= 5 && dates.slice(0, 5).every(isValidLocalDate);
+  const hasFiveDates = hasFiveConsecutiveDates(dates);
   const dailyDates = hasFiveDates ? (dates.slice(0, 5) as string[]) : [];
   const dailyCodes = Array.isArray(codes) ? codes : [];
   const dailyHighs = Array.isArray(highs) ? highs : [];
@@ -188,11 +206,12 @@ export async function getWeather(
     name: city.name,
     region: city.region,
     country: city.country,
+    currentAvailable,
     localDate: `${localDate.charAt(0).toLocaleUpperCase('pt-BR')}${localDate.slice(1)}`,
     updatedAt: timeValue ? `Atualizado às ${timeValue}` : '—',
     icon: currentCondition.icon,
     condition: currentCondition.condition,
-    temperatureCelsius: readOptionalNumber(current, 'temperature_2m'),
+    temperatureCelsius: currentTemperature,
     humidity: readOptionalNumber(current, 'relative_humidity_2m'),
     windKph: readOptionalNumber(current, 'wind_speed_10m'),
     precipitationMm: readOptionalNumber(current, 'precipitation'),

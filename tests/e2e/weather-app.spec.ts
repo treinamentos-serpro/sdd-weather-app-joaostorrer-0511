@@ -132,8 +132,11 @@ test('permite completar a consulta por teclado em viewport mobile sem overflow h
   const searchbox = page.getByRole('searchbox', { name: 'Buscar cidade' });
   await searchbox.fill('Curitiba');
   await searchbox.press('Enter');
+  const cityOption = page.getByRole('button', { name: /Curitiba.*Paraná, Brasil/ });
+  await expect(cityOption).toBeVisible();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Tab');
+  await expect(cityOption).toBeFocused();
   await page.keyboard.press('Enter');
 
   await expect(page.getByRole('region', { name: /Curitiba/ }).getByText('22°C')).toBeVisible();

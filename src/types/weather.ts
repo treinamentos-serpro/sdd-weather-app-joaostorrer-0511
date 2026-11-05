@@ -25,6 +25,7 @@ export interface WeatherCity {
   name: string;
   region?: string;
   country?: string;
+  currentAvailable: boolean;
   localDate: string;
   updatedAt: string;
   icon: string;
