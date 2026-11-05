@@ -81,19 +81,32 @@ pnpm test:e2e        # testes E2E (Playwright)
 ## Deploy no GitHub Pages
 
 Em **Settings → Pages → Build and deployment → Source**, selecione
-**GitHub Actions**, não **Deploy from a branch**. A publicação por branch pode
-continuar servindo a página estática antiga em vez do build React.
+**GitHub Actions**, não **Deploy from a branch**. A publicação por branch de
+`docs/` não inclui o build atualizado do app.
 
 O workflow [Deploy to GitHub Pages](.github/workflows/pages.yml) publica o
-conteúdo de `dist/` na raiz do site após o workflow **CI** concluir com sucesso
-na branch `main`. Também é possível executá-lo manualmente em **Actions**,
-selecionando a branch `main`.
+site do workshop na raiz e o app em `/<repo>/app/` após o workflow **CI**
+concluir com sucesso na branch `main`. Também é possível executá-lo
+manualmente em **Actions**, selecionando a branch `main`.
+
+O artefato é montado em `_site/`: os arquivos de `docs/` ficam na raiz,
+os materiais dos módulos são incluídos para o leitor do site e o build
+de `dist/` fica em `app/`.
 
 O build recebe `VITE_BASE` a partir da configuração do Pages para que os
-arquivos JavaScript e CSS usem o caminho correto do repositório. Após mudar a
+arquivos JavaScript e CSS usem o caminho `/<repo>/app/`. Após mudar a
 fonte de publicação, execute o workflow e abra a URL do ambiente
 **github-pages**. Se o navegador ainda exibir a página anterior, faça uma
 atualização forçada (`Ctrl+Shift+R`).
+
+URLs deste repositório:
+
+- [Site do workshop](https://treinamentos-serpro.github.io/sdd-weather-app-joaostorrer-0511/)
+- [Weather App](https://treinamentos-serpro.github.io/sdd-weather-app-joaostorrer-0511/app/)
+
+Se o Pages rejeitar a publicação por um deployment anterior em andamento,
+aguarde ou cancele esse deployment pela API antes de executar novamente.
+Cancelar apenas a execução do workflow pode não liberar o deployment do Pages.
 
 ---
 

@@ -34,10 +34,16 @@ jobs:
         id: pages
       - run: pnpm build
         env:
-          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/app/
+      - name: Assemble Pages site
+        run: |
+          mkdir -p _site/app
+          cp -a docs/. _site/
+          cp -a workshop _site/workshop
+          cp -a dist/. _site/app/
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: dist
+          path: _site
 
   deploy:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
