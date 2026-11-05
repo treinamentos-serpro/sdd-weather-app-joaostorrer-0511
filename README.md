@@ -78,6 +78,25 @@ pnpm test:e2e        # testes E2E (Playwright)
 
 ---
 
+## Deploy no GitHub Pages
+
+Em **Settings → Pages → Build and deployment → Source**, selecione
+**GitHub Actions**, não **Deploy from a branch**. A publicação por branch pode
+continuar servindo a página estática antiga em vez do build React.
+
+O workflow [Deploy to GitHub Pages](.github/workflows/pages.yml) publica o
+conteúdo de `dist/` na raiz do site após o workflow **CI** concluir com sucesso
+na branch `main`. Também é possível executá-lo manualmente em **Actions**,
+selecionando a branch `main`.
+
+O build recebe `VITE_BASE` a partir da configuração do Pages para que os
+arquivos JavaScript e CSS usem o caminho correto do repositório. Após mudar a
+fonte de publicação, execute o workflow e abra a URL do ambiente
+**github-pages**. Se o navegador ainda exibir a página anterior, faça uma
+atualização forçada (`Ctrl+Shift+R`).
+
+---
+
 ## Arquitetura do app
 
 ```text
