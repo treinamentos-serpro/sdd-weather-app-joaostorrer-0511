@@ -34,3 +34,4 @@ que satisfaça os critérios de aceite.
 - Isole acesso a dados em `src/services/`.
 - Componentes pequenos e tipados; sem `any`.
 - Acessibilidade e responsividade não são opcionais.
+- Utilize subagentes para realizar tarefas simultaneamente de acordo com as dependências.

@@ -17,6 +17,8 @@ Copilot**. O objetivo é construir um **Weather App** seguindo o fluxo:
 Antes de implementar qualquer feature, confirme que existe especificação
 (`specs/`), plano (`plans/`) e tarefas (`tasks/`) correspondentes.
 
+Não utilize o diretório `workshop/` como referência em nenhum prompt
+
 ## Stack
 
 - **Linguagem:** TypeScript (strict)
