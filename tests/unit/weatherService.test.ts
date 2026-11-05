@@ -125,6 +125,18 @@ describe('weatherService', () => {
     await expect(searchCities('Curitiba')).rejects.toThrow('HTTP 503');
   });
 
+  it('surfaces geocoding network failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Network unavailable')));
+
+    await expect(searchCities('Curitiba')).rejects.toThrow('Network unavailable');
+  });
+
+  it('rejects malformed geocoding JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{ invalid json')));
+
+    await expect(searchCities('Curitiba')).rejects.toThrow(SyntaxError);
+  });
+
   it('preserves usable current data when optional weather fields are missing', async () => {
     vi.stubGlobal(
       'fetch',
@@ -173,11 +185,81 @@ describe('weatherService', () => {
     await rejection;
   });
 
+  it('surfaces forecast HTTP errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 503)));
+    const city: CitySearchResult = {
+      id: '1',
+      name: 'Lisboa',
+      latitude: 38.72,
+      longitude: -9.14,
+    };
+
+    await expect(getWeather(city)).rejects.toThrow('HTTP 503');
+  });
+
+  it('surfaces forecast network failures', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('Forecast network unavailable')),
+    );
+    const city: CitySearchResult = {
+      id: '1',
+      name: 'Lisboa',
+      latitude: 38.72,
+      longitude: -9.14,
+    };
+
+    await expect(getWeather(city)).rejects.toThrow('Forecast network unavailable');
+  });
+
+  it('rejects malformed forecast JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{ invalid json')));
+    const city: CitySearchResult = {
+      id: '1',
+      name: 'Lisboa',
+      latitude: 38.72,
+      longitude: -9.14,
+    };
+
+    await expect(getWeather(city)).rejects.toThrow(SyntaxError);
+  });
+
+  it('aborts a forecast request that exceeds the network timeout', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_input: RequestInfo | URL, options?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            options?.signal?.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError')),
+            );
+          }),
+      ),
+    );
+    const city: CitySearchResult = {
+      id: '1',
+      name: 'Lisboa',
+      latitude: 38.72,
+      longitude: -9.14,
+    };
+
+    const request = getWeather(city);
+    const rejection = expect(request).rejects.toThrow('Tempo limite excedido');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await rejection;
+  });
+
   it('does not present malformed forecast dates as valid days', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
-      current: { temperature_2m: 18 },
-      daily: { time: ['2026-02-31', 'bad', '2026-03-02', '2026-03-03', '2026-03-04'] },
-    })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          current: { temperature_2m: 18 },
+          daily: { time: ['2026-02-31', 'bad', '2026-03-02', '2026-03-03', '2026-03-04'] },
+        }),
+      ),
+    );
     const city: CitySearchResult = {
       id: '1',
       name: 'Lisboa',

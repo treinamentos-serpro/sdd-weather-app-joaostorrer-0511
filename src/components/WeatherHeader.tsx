@@ -34,7 +34,7 @@ export default function WeatherHeader({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!query.trim() || searchStatus === 'loading') return;
+    if (!query.trim()) return;
     setShowResults(true);
     onSearch(query);
   }
@@ -87,11 +87,11 @@ export default function WeatherHeader({
             value={query}
           />
           <button
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-night-900 transition hover:bg-slate-200 disabled:cursor-wait disabled:opacity-70"
-            disabled={!query.trim() || searchStatus === 'loading'}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-night-900 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={!query.trim()}
             type="submit"
           >
-            {searchStatus === 'loading' ? 'Buscando...' : 'Buscar'}
+            Buscar
           </button>
 
           {showResults && query.trim() && searchStatus !== 'idle' && (
